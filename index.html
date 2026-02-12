@@ -1,0 +1,101 @@
+<!--
+README QUICK NOTE
+Smart Suggest logic:
+1) For each day, the engine chooses a start reference: Day 1 uses trip start point, Day N uses previous day's last stop.
+2) It computes haversine distance/time to every destination not already in plan.
+3) It filters by configurable km/day threshold and ranks nearest first.
+4) Suggested places display km + drive-time and render recommended map pins.
+5) Clicking a suggestion opens a centered modal to choose a target day/date before insertion.
+
+Prompt Planner mapping:
+1) Parser extracts nights (e.g., 5N), optional start location/date, km/day (e.g., 120km/day), party size, "must" destinations, and preferences.
+2) Generator builds day-wise stops using data inventory while honoring constraints (no repeats, linked hierarchy, km/day, one homestay/day, directional consistency).
+3) It creates a human-readable preview in-page.
+4) "Apply to Plan" writes generated days directly into itinerary columns with recalculated stats and map pins.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ladakh Expedition Planner</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Ladakh Expedition Planner</h1>
+    <div class="trip-config">
+      <label>Start Date <input type="date" id="startDate"></label>
+      <label>Trip Nights <input type="number" id="tripNights" min="1" max="20" value="5"></label>
+      <label>Trip Start Point
+        <select id="tripStart"></select>
+      </label>
+      <label>Km / Day <input type="number" id="kmPerDay" value="120" min="40" max="400"></label>
+      <button id="buildDaysBtn">Build Days</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="left-panel">
+      <div class="card">
+        <h2>Linked Selection</h2>
+        <div class="flow-grid">
+          <label>Destination
+            <select id="destinationSelect"></select>
+          </label>
+          <button id="addDestinationBtn">Add Destination</button>
+
+          <label>Village
+            <select id="villageSelect" disabled></select>
+          </label>
+          <button id="addVillageBtn" disabled>Add Village</button>
+
+          <label>Homestay
+            <select id="homestaySelect" disabled></select>
+          </label>
+          <button id="addHomestayBtn" disabled>Add Homestay</button>
+
+          <label>Experience
+            <select id="experienceSelect" disabled></select>
+          </label>
+          <button id="addExperienceBtn" disabled>Add Experience</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Smart Suggest</h2>
+        <button id="suggestBtn">Suggest Stops For Each Day</button>
+        <div id="suggestions"></div>
+      </div>
+
+      <div class="card">
+        <h2>Prompt Planner</h2>
+        <textarea id="promptInput" placeholder="Example: 5N Ladakh, start Leh, 120km/day, must: Nubra + Pangong, prefer homestays, 2 adults"></textarea>
+        <button id="generatePromptBtn">Generate from Prompt</button>
+        <div id="promptPreview"></div>
+        <button id="applyPromptBtn" disabled>Apply to Plan</button>
+      </div>
+    </section>
+
+    <section class="map-and-plan">
+      <div id="map"></div>
+      <div id="itinerary" class="itinerary"></div>
+    </section>
+  </main>
+
+  <div id="centerModal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="modalTitle">Add Item</h3>
+      <div id="modalBody"></div>
+      <div class="modal-actions">
+        <button id="modalCancel">Cancel</button>
+        <button id="modalConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>
